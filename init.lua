@@ -17,7 +17,7 @@ vim.opt.mouse = 'a'
 vim.opt.showmode = false
 
 --  `:help 'clipboard'`
---vim.opt.clipboard = 'xclip'
+vim.opt.clipboard = 'unnamedplus'
 
 vim.opt.breakindent = true
 
@@ -100,9 +100,109 @@ if not vim.loop.fs_stat(lazypath) then
 end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
 
--- [[ Configure and install plugins ]]
 require('lazy').setup({
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
+
+  {
+    "HakonHarnes/img-clip.nvim",
+    event = "VeryLazy",
+    opts = {
+      -- file and directory options
+      dir_path = "assets", ---@type string | fun(): string
+      extension = "png", ---@type string | fun(): string
+      file_name = "%Y-%m-%d-%H-%M-%S", ---@type string | fun(): string
+      use_absolute_path = false, ---@type boolean | fun(): boolean
+      relative_to_current_file = false, ---@type boolean | fun(): boolean
+
+      -- template options
+      template = "$FILE_PATH", ---@type string | fun(context: table): string
+      url_encode_path = false, ---@type boolean | fun(): boolean
+      relative_template_path = true, ---@type boolean | fun(): boolean
+      use_cursor_in_template = true, ---@type boolean | fun(): boolean
+      insert_mode_after_paste = true, ---@type boolean | fun(): boolean
+
+      -- prompt options
+      prompt_for_file_name = true, ---@type boolean | fun(): boolean
+      show_dir_path_in_prompt = false, ---@type boolean | fun(): boolean
+
+      -- base64 options
+      max_base64_size = 10, ---@type number | fun(): number
+      embed_image_as_base64 = false, ---@type boolean | fun(): boolean
+
+      -- image options
+      process_cmd = "", ---@type string | fun(): string
+      copy_images = false, ---@type boolean | fun(): boolean
+      download_images = true, ---@type boolean | fun(): boolean
+
+      -- drag and drop options
+      drag_and_drop = {
+        enabled = true, ---@type boolean | fun(): boolean
+        insert_mode = false, ---@type boolean | fun(): boolean
+      },
+    },
+    keys = {
+      -- suggested keymap
+      { "<leader>p", "<cmd>PasteImage<cr>", desc = "Paste image from system clipboard" },
+    },
+    markdown = {
+	    url_encode_path = true, ---@type boolean | fun(): boolean
+	    template = "![$CURSOR]($FILE_PATH)", ---@type string | fun(context: table): string
+	    download_images = false, ---@type boolean | fun(): boolean
+    },
+    neorg = {
+	    url_encode_path = true, ---@type boolean | fun(): boolean
+	    template = ".image $FILE_PATH", ---@type string | fun(context: table): string
+	    download_images = false, ---@type boolean | fun(): boolean
+    },
+  },
+
+  {
+    "vhyrro/luarocks.nvim",
+    priority = 1001, -- this plugin needs to run before anything else
+    opts = {
+      rocks = { "magick" },
+    },
+  },
+
+  {
+    "3rd/image.nvim",
+    event = "VeryLazy",
+    dependencies = { "luarocks.nvim" },
+    opts = {
+        backend = "kitty",
+        kitty_method = "normal",
+        integrations = {
+         markdown = {
+          enabled = true,
+          clear_in_insert_mode = false,
+          download_remote_images = true,
+          only_render_image_at_cursor = false,
+          filetypes = { "markdown", "vimwiki" },
+        },
+        neorg = { enabled = true,
+          clear_in_insert_mode = false,
+          download_remote_images = true,
+          only_render_image_at_cursor = false,
+          filetypes = { "norg" },
+        },
+          html = {
+            enabled = false,
+          },
+          css = {
+            enabled = false,
+          },
+        },
+        max_width = nil,
+        max_height = nil,
+        max_width_window_percentage = nil,
+        max_height_window_percentage = 50,
+        window_overlap_clear_enabled = false,
+        window_overlap_clear_ft_ignore = { "cmp_menu", "cmp_docs", "" },
+        editor_only_render_when_focused = false,
+        tmux_show_only_in_active_window = false,
+        hijack_file_patterns = { "*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp", "*.avif" },
+      }
+  },
 
   { -- "gc" to comment visual regions/lines
     'numToStr/Comment.nvim',
@@ -159,25 +259,27 @@ require('lazy').setup({
     'nvim-neorg/neorg',
     lazy = false,
     version = '*',
-    config = true,
-    -- config = function()
-    --   require('neorg').setup {
-    --     load = {
-    --       ['core.defaults'] = {}, -- loads default behavior
-    --       ['core.concealer'] = {}, -- adds pretty icons to your documents
-    --       ['core.dirman'] = { -- manages neorg workspaces
-    --         config = {
-    --           workspaces = {
-    --             notes = '~/notes',
-    --           },
-    --           default_workspace = 'notes',
-    --         },
-    --       },
-    --     },
-    --   }
-    --   vim.wo.foldlevel = 99
-    --   vim.wo.conceallevel = 2
-    -- end,
+    --config = true,
+    config = function()
+      require('neorg').setup {
+        load = {
+          ['core.defaults'] = {}, -- loads default behavior
+          ['core.concealer'] = {}, -- adds pretty icons to your documents
+          ['core.dirman'] = { -- manages neorg workspaces
+            config = {
+              workspaces = {
+                notes = '~/notes',
+              },
+              default_workspace = 'notes',
+            },
+          },
+          ["core.integrations.image"] = {},
+          ["core.latex.renderer"] = {},
+        },
+      }
+      vim.wo.foldlevel = 99
+      vim.wo.conceallevel = 2
+    end,
   },
 
   { -- Fuzzy Finder (files, lsp, etc)
@@ -464,7 +566,7 @@ require('lazy').setup({
         'L3MON4D3/LuaSnip',
         build = (function()
           -- Build Step is needed for regex support in snippets.
-         return 'make install_jsregexp'
+          return 'make install_jsregexp'
         end)(),
         dependencies = {
           -- `friendly-snippets` contains a variety of premade snippets.
@@ -554,55 +656,55 @@ require('lazy').setup({
       local dracula = require "dracula"
 
       dracula.setup({
-      styles = {
-        types = {},
-        functions = {},
-        parameters = {},
-        comments = {},
-        strings = {},
-        keywords = {},
-        variables = {},
-        constants = {},
-      },
-      transparent = false,
-      on_colors = function (colors, color)
-        ---@type dracula.palette
-        return {
-          -- override or create new colors
-          mycolor = "#ffffff",
+        styles = {
+          types = {},
+          functions = {},
+          parameters = {},
+          comments = {},
+          strings = {},
+          keywords = {},
+          variables = {},
+          constants = {},
+        },
+        transparent = false,
+        on_colors = function (colors, color)
+          ---@type dracula.palette
+          return {
+            -- override or create new colors
+            mycolor = "#ffffff",
+          }
+        end,
+        on_highlights = function (colors, color)
+          ---@type dracula.highlights
+          return {
+            ---@type vim.api.keyset.highlight
+            Normal = { fg = colors.mycolor }
+          }
+        end,
+        plugins = {
+          ["nvim-treesitter"] = true,
+          ["rainbow-delimiters"] = true,
+          ["nvim-lspconfig"] = true,
+          ["nvim-navic"] = true,
+          ["nvim-cmp"] = true,
+          ["indent-blankline.nvim"] = true,
+          ["neo-tree.nvim"] = true,
+          ["nvim-tree.lua"] = true,
+          ["which-key.nvim"] = true,
+          ["dashboard-nvim"] = true,
+          ["gitsigns.nvim"] = true,
+          ["neogit"] = true,
+          ["todo-comments.nvim"] = true,
+          ["lazy.nvim"] = true,
+          ["telescope.nvim"] = true,
+          ["noice.nvim"] = true,
+          ["hop.nvim"] = true,
+          ["mini.statusline"] = true,
+          ["mini.tabline"] = true,
+          ["mini.starter"] = true,
+          ["mini.cursorword"] = true,
+          ['bufferline.nvim'] = true,
         }
-      end,
-      on_highlights = function (colors, color)
-        ---@type dracula.highlights
-        return {
-          ---@type vim.api.keyset.highlight
-          Normal = { fg = colors.mycolor }
-        }
-      end,
-      plugins = {
-        ["nvim-treesitter"] = true,
-        ["rainbow-delimiters"] = true,
-        ["nvim-lspconfig"] = true,
-        ["nvim-navic"] = true,
-        ["nvim-cmp"] = true,
-        ["indent-blankline.nvim"] = true,
-        ["neo-tree.nvim"] = true,
-        ["nvim-tree.lua"] = true,
-        ["which-key.nvim"] = true,
-        ["dashboard-nvim"] = true,
-        ["gitsigns.nvim"] = true,
-        ["neogit"] = true,
-        ["todo-comments.nvim"] = true,
-        ["lazy.nvim"] = true,
-        ["telescope.nvim"] = true,
-        ["noice.nvim"] = true,
-        ["hop.nvim"] = true,
-        ["mini.statusline"] = true,
-        ["mini.tabline"] = true,
-        ["mini.starter"] = true,
-        ["mini.cursorword"] = true,
-        ['bufferline.nvim'] = true,
-      }
       })
       vim.cmd.colorscheme 'dracula'
       -- vim.cmd.colorscheme 'dracula-soft'
@@ -670,7 +772,7 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc' },
+      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc', 'rust' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -711,27 +813,31 @@ require('lazy').setup({
 },
 
   {
-  ui = {
-    icons = vim.g.have_nerd_font and {} or {
-      cmd = '⌘',
-      config = '🛠',
-      event = '📅',
-      ft = '📂',
-      init = '⚙',
-      keys = '🗝',
-      plugin = '🔌',
-      runtime = '💻',
-      require = '🌙',
-      source = '📄',
-      start = '🚀',
-      task = '📌',
-      lazy = '💤 ',
+    ui = {
+      icons = vim.g.have_nerd_font and {} or {
+        cmd = '⌘',
+        config = '🛠',
+        event = '📅',
+        ft = '📂',
+        init = '⚙',
+        keys = '🗝',
+        plugin = '🔌',
+        runtime = '💻',
+        require = '🌙',
+        source = '📄',
+        start = '🚀',
+        task = '📌',
+        lazy = '💤 ',
+      },
     },
-  },
-})
+  })
 
 -- `modeline`, `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+
+-- something for image.nvim
+package.path = package.path .. ";" .. vim.fn.expand("$HOME") .. "/.luarocks/share/lua/5.1/?/init.lua;"
+package.path = package.path .. ";" .. vim.fn.expand("$HOME") .. "/.luarocks/share/lua/5.1/?.lua;"
 
 -- Configure Oil
 require('oil').setup {

@@ -275,6 +275,11 @@ require('lazy').setup({
           },
           ["core.integrations.image"] = {},
           ["core.latex.renderer"] = {},
+          ["core.completion"] = {
+            config = {
+              engine = "nvim-cmp",
+            },
+          }
         },
       }
       vim.wo.foldlevel = 99
